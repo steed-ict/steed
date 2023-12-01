@@ -1,4 +1,4 @@
-# [Steed Open Source Project](https://github.com/zhiyiwang/steed) <!-- omit in toc -->
+# [Steed Open Source Project](https://github.com/steed-ict/steed) <!-- omit in toc -->
 
 
 ## [Table of Contents](#table-of-contents) <!-- omit in toc -->
@@ -123,7 +123,7 @@ $ sudo apt-get install git g++ cmake doxygen graphviz liblz4-1 liblz4-dev
 ### 3.1 Download
 Steed is available on Gitlab. You can clone the Steed repository using the following command: 
 ```bash
-$ git clone https://github.com/zhiyiwang/steed.git
+$ git clone https://github.com/steed-ict/steed
 ```
 After cloning the Steed repository, you can see the following directory:
 ```bash
