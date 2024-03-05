@@ -145,7 +145,7 @@ $ sudo apt-get install tree
 The following command shows the directory structure of Steed. Here we use `tree . -L 3` to show the first three levels of the directory structure:
 ```bash
 $ cd $STEED_HOME
-$ tree . -L 3
+$ tree . -L 2
 .
 ├── CMakeLists.txt      # CMake configuration file
 ├── CMakeModules        # CMake modules
@@ -1019,3 +1019,6 @@ $ tree ./data
 ./data
 0 directories, 0 files
 ```
+
+
+
