@@ -15,11 +15,13 @@
 - [3 Source Code](#3-source-code)
   - [3.1 Download](#31-download)
   - [3.2 Directory Structure](#32-directory-structure)
+  - [3.3 Documentation](#33-documentation)
 - [4 Build](#4-build)
   - [4.1 Build with CMake](#41-build-with-cmake)
   - [4.2 Build with Make](#42-build-with-make)
   - [4.3 Unittest](#43-unittest)
   - [4.4 Install](#44-install)
+  - [4.5 Set Environment Variables](#45-set-environment-variables)
 - [5 Example](#5-example)
   - [5.1 Build with Steed shared library](#51-build-with-steed-shared-library)
   - [5.2 JSON Example Data](#52-json-example-data)
@@ -185,6 +187,7 @@ $ tree . -L 2
     └── Schema.cpp      # schema tool
 
 20 directories, 16 files
+```
 
 
 ### 3.3 Documentation
@@ -552,6 +555,13 @@ $ tree /usr/local/ -L 2
 ```
 `libSteed.so` is the steed shared library. You can use the steed shared library to build your own application. We will show you how to build your own application with the steed shared library in the next section.
 
+### 4.5 Set Environment Variables
+
+To use the steed shared library, you need to set the `LD_LIBRARY_PATH` environment variable. You can use the following command to set the `LD_LIBRARY_PATH` environment variable:
+```bash
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+```
+Also, you can add the above command to the `.bashrc` file to set the `LD_LIBRARY_PATH` environment variable automatically when you log in.
 
 ## 5 Example
 In this section, we will show you how to build your own application with the steed shared library. We will show you how to build the example application in the `examples` directory. The directory structure of the example is as follows:
@@ -1019,6 +1029,5 @@ $ tree ./data
 ./data
 0 directories, 0 files
 ```
-
 
 
