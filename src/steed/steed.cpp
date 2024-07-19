@@ -46,6 +46,7 @@ using std::ifstream;
 Config g_config; 
 
 
+
 // init steed static data and load config file
 void init(const string &cfile)
 {
@@ -163,6 +164,247 @@ int dropTable  (const string &db, const string &table)
     return 1;
 } // dropTable
 
-
-
 } // steed
+
+
+
+
+
+// call libsteed.so from python using ctypes
+// directly call C++ function in C
+extern "C" {
+
+void make_clean(void)
+{
+    // remove python generated files
+    std::string pycache = "__pycache__";
+    if (steed::Utility::checkFileExisted(pycache))
+    {   steed::Utility::removeDir(pycache);   }
+
+    std::string pycfile = "steed.pyc";
+    if (steed::Utility::checkFileExisted(pycfile))
+    {   steed::Utility::removeFile(pycfile);   }
+
+    // remove store base dir 
+    std::string s = steed::g_config.m_store_base;
+    steed::Utility::removeDir(s);
+} // make_clean
+
+
+void free_string(char *str)
+{
+//    printf("STEED: free string\n----\n%s\n----\n", str);
+    delete [] str;
+} // free_string
+
+
+void init(const char *cfile)
+{
+    printf("STEED: init static data\n"); 
+    const std::string conf_file(cfile); 
+    steed::init(conf_file);    
+} // init
+
+
+void uninit(void)
+{
+    printf("STEED: uninit static data\n");
+    steed::uninit();
+} // uninit
+
+
+int create_database(const char *db)
+{
+    printf("STEED: create database [%s]\n", db);
+    const std::string database(db);
+    return steed::createDatabase(database);
+} // create_database
+
+
+int drop_database  (const char *db)
+{
+    printf("STEED: drop database [%s]\n", db);
+    const std::string database(db);
+    return steed::dropDatabase(database);
+} // drop_database
+
+
+int create_table(const char *db, const char *table)
+{
+    printf("STEED: create table [%s.%s]\n", db, table);
+    const std::string database(db), tname(table);
+    return steed::createTable(database, tname);
+} // create_table
+
+
+int drop_table  (const char *db, const char *table)
+{
+    printf("STEED: drop table [%s.%s]\n", db, table);
+    const std::string database(db), tname(table);
+    return steed::dropTable(database, tname);
+} // drop_table
+
+
+int parse_file(const char *db, const char *table, const char *jpath)
+{
+    printf("STEED: parse json [%s.%s] from [%s]\n", db, table, jpath);
+    const std::string database(db), tname(table), jfile(jpath);
+    std::ifstream ifs(jfile);
+    if (!ifs.is_open())
+    {
+        printf("STEED: cannot open [%s]!\n", jfile.c_str());
+        return -1;
+    } // ifs
+
+    steed::ColumnParser *cp = new steed::ColumnParser();
+    std::istream *is = &ifs;
+    if (cp->init(database, tname, is) < 0)
+    {
+        printf("STEED: ColumnParser init failed!\n");
+        return -1;
+    } // if
+
+    int status = 0, cnt = 0;
+    while ((status = cp->parseOne()) > 0)
+    {
+        ++cnt;
+        if (cnt % 100000 == 0)
+        {   printf("STEED: parsed %d records\n", cnt);   }
+    } // while
+
+    delete cp; cp = nullptr;
+    ifs.close();
+
+    if (status < 0)
+    {
+        printf("STEED: insert failed!\n");
+        return -1;
+    } 
+    else
+    {
+        printf("STEED: parsed %d records\n", cnt);
+    } // if
+
+    return 1;
+} // parse_file
+
+
+int assemble_to_file(const char *db, const char *table, char **cols, int ncol, const char *jpath)
+{
+    printf("STEED: assemble json [%s.%s] to [%s]\n", db, table, jpath);
+    const std::string database(db), tname(table), jfile(jpath);
+    std::ofstream ofs(jfile);
+    if (!ofs.is_open())
+    {
+        printf("STEED: cannot open [%s]!\n", jfile.c_str());
+        return -1;
+    } // ofs
+
+    std::vector< std::string > cols_vec;
+    for (int ci = 0; ci < ncol; ++ci)
+    {   cols_vec.emplace_back(cols[ci]);   } // for ci
+
+    steed::ColumnAssembler *ca = new steed::ColumnAssembler();
+    if (ca->init(database, tname, cols_vec) < 0)
+    {
+        printf("STEED: ColumnAssembler init failed!\n");
+        return -1;
+    } // if
+
+    char *rbgn = nullptr;
+    std::ostream *ostrm = &ofs;
+    steed::RecordOutput ro( ca->getSchemaTree() );
+    while (ca->getNext(rbgn) > 0)
+    {   ro.outJSON2Strm(ostrm, rbgn);   } // while
+
+    delete ca; ca = nullptr;
+    ofs.close();
+
+    return 1;
+} // assemble_to_file 
+
+
+const char *assemble_to_string(const char *db, const char *table, const char **cols, int ncol)
+{
+    printf("STEED: assemble json [%s.%s] to string\n", db, table);
+    const std::string database(db), tname(table);
+
+    std::vector< std::string > cols_vec;
+    for (int ci = 0; ci < ncol; ++ci)
+    {   cols_vec.emplace_back(cols[ci]);   } // for ci
+
+    steed::ColumnAssembler *ca = new steed::ColumnAssembler();
+    if (ca->init(database, tname, cols_vec) < 0)
+    {
+        printf("STEED: ColumnAssembler init failed!\n");
+        return nullptr;
+    } // if
+
+
+    char *rbgn = nullptr;
+    steed::RecordOutput ro( ca->getSchemaTree() );
+
+    bool first = true;
+    std::stringstream ss;
+    ss << "[";
+    while (ca->getNext(rbgn) > 0)
+    {
+        if (first) { first = false; }
+        else { ss << ","; }
+
+        ro.outJSON2Strm(&ss, rbgn);
+    } 
+    ss << "]";
+
+    delete ca; ca = nullptr;
+
+    std::string str = ss.str();
+    char* cstr = new char[str.length() + 1];
+    strcpy(cstr, str.c_str());
+    return cstr; // NOTE: free this memory in PYTHON
+} // assemble_to_string
+
+
+steed::ColumnParser *open_parser(const char *db, const char *table)
+{
+    printf("STEED: open column parser [%s.%s]\n", db, table);
+    const std::string database(db), tname(table);
+    steed::ColumnParser *cp = new steed::ColumnParser();
+    if (cp->init(database, tname) < 0)
+    {
+        printf("STEED: ColumnParser init failed!\n");
+        return nullptr;
+    } // if
+
+    return cp;
+} // create_column_parser
+
+
+int insert_parser(steed::ColumnParser *cp, const char *recd, uint32_t len)
+{
+    if (recd == nullptr) { return -1; }
+
+    int64_t s = cp->parseOne(recd, len);
+    if (s < 0)
+    {
+        printf("STEED: insert record failed!\n");
+        return -1;
+    } // if
+
+    printf("STEED: insert record success!\n");
+
+    return 1;
+} // insert_parser
+
+
+void close_parser(steed::ColumnParser *cp)
+{
+    printf("STEED: close column parser\n");
+    delete cp; cp = nullptr;
+} // close_parser
+
+
+} // extern "C
+
+
+

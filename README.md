@@ -33,6 +33,11 @@
     - [5.4.4 Parse Data](#544-parse-data)
     - [5.4.5 Assemble Data](#545-assemble-data)
     - [5.4.6 Drop Table and Database](#546-drop-table-and-database)
+- [6 Steed API for Python](#6-steed-api-for-python)
+  - [Prerequisites](#prerequisites)
+  - [Example](#example)
+    - [Python Code](#python-code)
+    - [Explanation](#explanation)
 
 
 
@@ -117,7 +122,7 @@ We also contain the Google Test source code in the `src/thirdparty/googletest` d
 ### 2.8 All in One
 You can use the following command to install all the pre-requisites:
 ```bash
-$ sudo apt-get install git g++ cmake doxygen graphviz liblz4-1 liblz4-dev
+$ sudo apt-get install git g++ cmake doxygen graphviz liblz4-1 liblz4-dev python3-dev
 ```
 
 
@@ -1031,3 +1036,98 @@ $ tree ./data
 ```
 
 
+
+## 6 Steed API for Python
+In this section, we will show you how to use the steed pip package to build your own application with the steed shared library. We will show you how to build the example application in the `pysteed` directory. The directory structure of the example is as follows:
+```bash
+$ cd $STEED_HOME/pysteed
+$ tree .
+.
+├── json
+│   └── try.json
+└── pysteed_demo.py
+```
+
+In the `pysteed` directory, we have the following files:
+- `json` directory contains the example json text data;
+- `pysteed_demo.py` is the example source code.
+
+### Prerequisites
+Before you run the python example, you need to install the steed pip package. You can use the following command to install the steed pip package:
+```bash
+$ pip install pysteed
+```
+We have uploaded the steed pip package to the pypi.org. You can also download the steed pip package from the [pysteed PyPI Page](https://pypi.org/project/pysteed/).
+
+### Example
+
+#### Python Code
+In the `pysteed_demo.py` file, we use the steed library to parse the json data in the `json` directory to columnar data. The following is the `pysteed_demo.py` file:
+
+```python
+import json
+import pysteed
+
+conf=""
+db="testdb"
+table="testtable"
+jinput="./json/try.json"
+joutput="./output.json"
+
+
+pysteed.init(conf) 
+pysteed.create_database(db)
+pysteed.create_table(db, table)
+
+########## parse and insert json data ##############################
+##- ## 1. parse json file
+##- pysteed.parse_file(db, table, jinput)
+
+## 2. parse JSON object
+pysteed_parser = pysteed.open_parser(db, table)
+
+json_array = [
+    {"item": "apple", "size": {"h": 10, "w": 20}},
+    {"item": "banana", "size": {"h": 5, "w": 10}},
+    {"item": "orange", "size": {"h": 8, "w": 12}},
+    {"item": "pear", "size": {"h": 6, "w": 8}},
+    {"item": "grape", "size": {"h": 4, "w": 6}},
+    {"item": "pineapple", "size": {"h": 15, "w": 30}}
+]
+
+for json_object in json_array:
+    json_str = json.dumps(json_object)  # Serialize dict to JSON string
+    json_bytes = json_str.encode('utf-8')  # Encode string to bytes
+##    print(json_bytes) # print json_bytes to debug
+    pysteed.insert_json_object(pysteed_parser, json_bytes) # insert json bytes
+
+pysteed.close_parser(pysteed_parser)
+pysteed_parser = None
+#### 
+
+########## query and assemble json data ##############################
+cols = ["item", "size.h"]
+## 1. assemble to file
+pysteed.assemble_to_file(db, table, cols, joutput)
+
+## 2. assemble to python json object
+jdata = pysteed.assemble_to_string(db, table, cols)
+print(jdata)
+
+## clean up 
+pysteed.drop_table(db, table)
+pysteed.drop_database(db)
+pysteed.uninit()
+
+pysteed.make_clean()
+```
+
+
+#### Explanation
+In the `pysteed_demo.py` file, we have the following steps:
+1. In the main function, we first use the `init` function to initialize the steed library.
+2. Then, we create a database named `testdb` and a table named `testtable` in the `testdb` database.
+3. Then the example creates a **ColumnParser** object to parse the json data to columnar data.
+4. After parsing the json data, the example creates a **ColumnAssembler** object to assemble columnar data to row data and output the row data to the standard output.
+5. Finally, the example drops the `testtable` table and `testdb` database.
+6. We use the `make_clean` function to clean up the steed static data.:

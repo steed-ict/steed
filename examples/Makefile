@@ -3,26 +3,19 @@ PROJECT = SteedExample
 LIBSTEED = steed
 BINARY = $(PROJECT)
 
+INSTALLDIR = /usr/local
+STEEDHEAD = ${INSTALLDIR}/include/steed
 THIRDDIRS = ../src/thirdparty/cli11/include
-SRCSUBDIR += ${THIRDDIRS}
-SRCSUBDIR += ../src/steed/conf
-SRCSUBDIR += ../src/steed/util
-SRCSUBDIR += ../src/steed/base
-SRCSUBDIR += ../src/steed/schema
-SRCSUBDIR += ../src/steed/store
-SRCSUBDIR += ../src/steed/assemble
-SRCSUBDIR += ../src/steed/parse
-SRCSUBDIR += ../src/steed/unittest
-INCLUDES  = $(addprefix -I,$(SRCSUBDIR))
+INCLUDES = -I$(STEEDHEAD) -I$(THIRDDIRS)
 
 # compiler
 CC = g++
 CFLAGS = -std=c++11 -Wall -Wextra -Werror -Wall
 CFLAGS += -g -O3 -fPIC
-CFLAGS += -I../include $(INCLUDES)
+CFLAGS += $(INCLUDES)
 
 # linker
-LDFLAGS = -ldl -L/usr/local/lib -l$(LIBSTEED) 
+LDFLAGS = -ldl -L${INSTALLDIR}/lib -l$(LIBSTEED)
 
 # source files
 SRCS = main.cpp

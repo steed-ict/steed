@@ -61,12 +61,33 @@ add_subdirectory(assemble)
 add_subdirectory(unittest)
 
 
-
+# make install path
 install(TARGETS ${BINARY}
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
    RUNTIME DESTINATION bin
-   INCLUDES DESTINATION include
+   INCLUDES DESTINATION include/steed
 )
 
-install(FILES ../../include/steed.h DESTINATION include)
+# install header files
+install(FILES ../../include/steed.h DESTINATION include/steed)
+
+# get all header files
+file(GLOB_RECURSE HEADER_FILES 
+     ${CMAKE_SOURCE_DIR}/include/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/assemble/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/base/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/conf/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/parse/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/schema/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/store/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/unittest/*.h
+     ${CMAKE_SOURCE_DIR}/src/steed/util/*.h
+)
+
+
+## # print to check
+## message(STATUS "HEADER_FILES: ${HEADER_FILES}")
+
+# install header files
+install(FILES ${HEADER_FILES} DESTINATION include/steed)
